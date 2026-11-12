@@ -13,7 +13,10 @@
 | auth key 被拒 / 過期 | key 失效、單次使用已用過 | 重新建立 auth key 並更新 |
 | `警告: ... 權限過寬` | env 檔可被 group/other 讀取 | `chmod 600 ~/.config/tailscale/tailnetctl.env` |
 | SSH 沒有反應或卡住 | 非 TTY 環境執行互動式 ssh | 改用 `scripts/ssh_peer`；非 TTY 會印出指令 |
-| 一直詢問遠端使用者 | 非 TTY 無法回答提示 | 在 env 檔設 `TAILSCALE_REMOTE_SSH_USER` 或用 `--remote-user` |
+| 一直詢問遠端使用者 | 非 TTY 無法回答提示 | 先以 `check_setup` 的 `ssh_user_candidate` 確認帳號，再用 `--remote-user` |
+| 在對話視窗無法完成 SSH | agent 非 TTY，無法交棒互動式 ssh | 把 `ssh -- <user>@<host>` 完整指令給使用者在終端機執行 |
+| `BatchMode ... Permission denied` | 用 BatchMode 反覆猜帳號 | 不要猜；先確認 username，或請使用者用密碼／金鑰登入 |
+| auth key 留在 shell history | 用 `printf` 直接把 key 寫在命令列 | 改用 `read -rs` 隱藏輸入或編輯器寫入 key 檔 |
 | `REMOTE HOST IDENTIFICATION HAS CHANGED` | 節點重建、host key 變更 | 確認是預期變更後 `ssh-keygen -R <hostname>` 與 `ssh-keygen -R <ip>` |
 | Headscale／自架控制平面連不上 | 未指定 login server | 設 `TAILSCALE_LOGIN_SERVER` |
 | `web` 的 port 已被占用 | 本機 port 衝突 | 用 `--local-port` 換 port |
@@ -32,4 +35,5 @@
 - 不要 `cat` / `grep` env 檔或 key。
 - 不要在未確認的情況下 `join --force`（可能中斷目前連線或切換 tailnet）。
 - 不要自動關閉 SSH host key 檢查。
-- 不要在非 TTY 硬跑互動式 `ssh` 或 `web`。
+- 不要在非 TTY 硬跑互動式 `ssh` 或 `web`，也不要用 BatchMode 反覆猜帳號。
+- 不要把 auth key 用 `printf` 直接寫在命令列（會留在 shell history）。

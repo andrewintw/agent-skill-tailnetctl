@@ -23,7 +23,9 @@ install -m 600 "$SKILL_DIR/references/env.example" \
   ~/.config/tailscale/tailnetctl.env
 ```
 
-填入 auth key。建議使用「key 檔案」而不是 inline key：
+填入 auth key。建議使用「key 檔案」而不是 inline key。**請使用者在自己的終端機
+執行**，不要把 key 貼進對話；用隱藏輸入避免 key 留在 shell history。
+若 key 檔已存在且有效就跳過以下指令：
 
 ```dotenv
 TAILSCALE_AUTH_KEY_FILE=/home/<you>/.config/tailscale/authkey
@@ -31,10 +33,11 @@ TAILSCALE_REMOTE_SSH_USER=<remote-user>
 ```
 
 ```bash
-# auth key 單獨存一個檔案
-printf '%s\n' 'tskey-auth-REPLACE_ME' > ~/.config/tailscale/authkey
-chmod 600 ~/.config/tailscale/authkey
+install -m 600 /dev/null ~/.config/tailscale/authkey
+printf 'Paste auth key: '; read -rs TSKEY; printf '\n'; printf '%s\n' "$TSKEY" > ~/.config/tailscale/authkey; unset TSKEY
 ```
+
+也可請使用者用編輯器建立 `~/.config/tailscale/authkey`（內容只有 key）。
 
 Auth key 建立位置：<https://console.tailscale.com/admin/settings/keys>
 
@@ -51,9 +54,17 @@ python3 "$SKILL_DIR/scripts/check_setup"
 - `key_source` / `key_present`：key 來源與是否可用。
 - `key_placeholder`：是否仍是 `REPLACE_ME`。
 - `backend_state` / `online`：Tailscale 目前狀態。
+- `remote_ssh_user`：`TAILSCALE_REMOTE_SSH_USER` 的值（非 secret，未設定為 `null`）。
+- `current_user`：執行 `check_setup` 的目前使用者。
+- `ssh_user_candidate`：SSH／web 前要確認的候選帳號；有設定 env 時等於
+  `remote_ssh_user`，否則等於 `current_user`。
+- `ssh_user_source`：候選帳號來源，`shell`、`env` 或 `current`。
 - `ready`：是否可執行 `join`。
 
 需要時也可用 `join --dry-run` 驗證 key 可解析（不會印出 key）。
+
+`check_setup` 在 `ready: false` 時會以 exit 1 結束，但仍會輸出完整 JSON；
+SSH／web 只需要 `ssh_user_candidate` 時可忽略 exit code。
 
 ## 欄位
 

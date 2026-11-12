@@ -2,7 +2,8 @@
 """Report tailnetctl setup readiness without revealing secrets.
 
 Output is a JSON object on stdout. Key values are never included; only
-booleans and paths are reported.
+booleans and paths are reported. Remote SSH username fields are non-secret and
+included so agents can confirm the account before connecting.
 
 Exit codes:
     0  env file exists and a usable auth key is present
@@ -16,6 +17,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import getpass
 import json
 import os
 import shutil
@@ -54,6 +56,18 @@ def get_value(name: str, values: dict[str, str]) -> str | None:
     if value is not None and value.strip():
         return value.strip()
     return None
+
+
+def get_value_with_source(
+    name: str, values: dict[str, str]
+) -> tuple[str | None, str | None]:
+    shell = os.environ.get(name)
+    if shell is not None and shell.strip():
+        return shell.strip(), "shell"
+    value = values.get(name)
+    if value is not None and value.strip():
+        return value.strip(), "env"
+    return None, None
 
 
 def file_mode(path: Path) -> tuple[str | None, bool | None]:
@@ -107,6 +121,13 @@ def main() -> None:
     env_mode, env_mode_ok = file_mode(env_file) if env_exists else (None, None)
     values = read_env_values(env_file)
 
+    remote_ssh_user, remote_ssh_user_source = get_value_with_source(
+        "TAILSCALE_REMOTE_SSH_USER", values
+    )
+    current_user = getpass.getuser()
+    ssh_user_candidate = remote_ssh_user or current_user
+    ssh_user_source = remote_ssh_user_source or "current"
+
     key_file_value = get_value("TAILSCALE_AUTH_KEY_FILE", values)
     inline_key = get_value("TAILSCALE_AUTH_KEY", values)
 
@@ -142,6 +163,11 @@ def main() -> None:
         "key_file": key_file,
         "key_file_exists": key_file_exists,
         "key_file_nonempty": key_file_nonempty,
+        "remote_ssh_user": remote_ssh_user,
+        "remote_ssh_user_source": remote_ssh_user_source,
+        "current_user": current_user,
+        "ssh_user_candidate": ssh_user_candidate,
+        "ssh_user_source": ssh_user_source,
         "ready": ready,
         **tailscale_state(),
     }

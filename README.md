@@ -151,9 +151,18 @@ install -m 600 skills/tailnetctl/references/env.example \
   ~/.config/tailscale/tailnetctl.env
 ```
 
-Create an auth key at <https://console.tailscale.com/admin/settings/keys>, then
-put it in the env file (`TAILSCALE_AUTH_KEY`) or, preferably, a separate
-`0600` file referenced by `TAILSCALE_AUTH_KEY_FILE`.
+Create an auth key at <https://console.tailscale.com/admin/settings/keys>.
+In your own terminal (do not paste the key into the chat, and do not put it on
+the command line where it would stay in shell history), write it to the
+separate `0600` file referenced by `TAILSCALE_AUTH_KEY_FILE`. Skip this if the
+key file already exists and is valid:
+
+```bash
+install -m 600 /dev/null ~/.config/tailscale/authkey
+printf 'Paste auth key: '; read -rs TSKEY; printf '\n'; printf '%s\n' "$TSKEY" > ~/.config/tailscale/authkey; unset TSKEY
+```
+
+Alternatively use an editor, or set `TAILSCALE_AUTH_KEY` in the env file.
 
 Verify without printing the key:
 
@@ -195,6 +204,12 @@ python3 "$SKILL/scripts/web_peer" --peer <host> --port 80
 `ssh_peer` and `web_peer` run interactively when a TTY is available; otherwise
 they add `--dry-run` and print the equivalent command. This keeps agent tool
 calls from hanging on an interactive session.
+
+Before producing an SSH or web command, resolve the remote username with
+`check_setup` (`ssh_user_candidate`, from `TAILSCALE_REMOTE_SSH_USER` or the
+current user) and confirm it with the user. In non-TTY sessions, give the
+printed `ssh -- <user>@<host>` command to the user to run in their terminal;
+the agent does not attempt interactive SSH or guess accounts with BatchMode.
 
 ## Upstream
 
