@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""Start an SSH port-forward to a tailnet peer, with a non-interactive fallback.
+
+When stdin and stdout are a TTY, this execs `tailnetctl web`, which runs in the
+foreground until Ctrl-C. Otherwise it runs the same command with --dry-run so
+the agent prints the equivalent `ssh -N -L ...` command.
+
+Usage:
+    python3 scripts/web_peer --peer HOST [--port N] [--local-port N] [--remote-user USER]
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+SKILL_DIR = Path(__file__).resolve().parents[1]
+WRAPPER = SKILL_DIR / "scripts" / "tailnetctl"
+
+
+def main() -> None:
+    args = sys.argv[1:]
+    interactive = sys.stdin.isatty() and sys.stdout.isatty()
+
+    cmd = [sys.executable, str(WRAPPER), "web"]
+    if not interactive and "--dry-run" not in args:
+        cmd.append("--dry-run")
+    cmd.extend(args)
+
+    os.execvp(cmd[0], cmd)
+
+
+if __name__ == "__main__":
+    main()

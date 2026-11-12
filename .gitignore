@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+*.env
+authkey
+.tailscale.env
+.venv/
+.DS_Store

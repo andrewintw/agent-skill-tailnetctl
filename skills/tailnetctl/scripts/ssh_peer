@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""Open an SSH session to a tailnet peer, with a non-interactive fallback.
+
+When stdin and stdout are a TTY, this execs `tailnetctl ssh`, which hands the
+terminal over to the system ssh client. Otherwise it runs the same command with
+--dry-run so the agent prints a ready-to-paste ssh command instead of hanging.
+
+Usage:
+    python3 scripts/ssh_peer --peer HOST [--remote-user USER] [--ssh-port N] [--ssh-arg ARG]
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+SKILL_DIR = Path(__file__).resolve().parents[1]
+WRAPPER = SKILL_DIR / "scripts" / "tailnetctl"
+
+
+def main() -> None:
+    args = sys.argv[1:]
+    interactive = sys.stdin.isatty() and sys.stdout.isatty()
+
+    cmd = [sys.executable, str(WRAPPER), "ssh"]
+    if not interactive and "--dry-run" not in args:
+        cmd.append("--dry-run")
+    cmd.extend(args)
+
+    os.execvp(cmd[0], cmd)
+
+
+if __name__ == "__main__":
+    main()

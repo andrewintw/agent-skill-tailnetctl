@@ -1,0 +1,61 @@
+{
+  "skill_name": "tailnetctl",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "幫我啟用 Tailscale，連上 tailnet",
+      "should_trigger": true,
+      "expected_output": "先查 status；未連線時以 join 加入，並回報是否已加入 tailnet 與是否在線。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Tailscale 現在連上了嗎？有沒有 join 到 tailnet？",
+      "should_trigger": true,
+      "expected_output": "執行 status，明確回答是否已加入 tailnet、是否在線，並附 tailnet 名稱與本機資訊。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "列出 tailnet 裡面有哪些裝置",
+      "should_trigger": true,
+      "expected_output": "執行 list（可加 --json），以表格列出裝置並標示 self。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "幫我 SSH 進去 tailnet 上的 my-host",
+      "should_trigger": true,
+      "expected_output": "用 list 確認 peer，再以 ssh_peer 執行（TTY）或印出 ssh 指令（非 TTY）。",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "開一個 web tunnel 到 peer 的 80 port",
+      "should_trigger": true,
+      "expected_output": "使用 web_peer --peer <peer> --port 80；非 TTY 時印出等價的 ssh -N -L 指令。",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "我還沒設定 Tailscale 的 auth key，要怎麼開始？",
+      "should_trigger": true,
+      "expected_output": "說明需要 auth key 並提供建立網址，引導建立 0600 env 檔（可用 env.example），不要在對話中索取 key。",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "幫我解壓縮這個 tar 檔",
+      "should_trigger": false,
+      "expected_output": "不應載入本技能；直接完成解壓縮。",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "看一下目前的 kernel 版本",
+      "should_trigger": false,
+      "expected_output": "不應載入本技能；直接回報 kernel 版本。",
+      "files": []
+    }
+  ]
+}

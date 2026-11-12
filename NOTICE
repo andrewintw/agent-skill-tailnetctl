@@ -1,0 +1,13 @@
+tailnetctl skill
+Copyright (c) 2026 andrewintw
+
+This repository vendors `tailnetctl.py` from:
+
+    Repository: https://github.com/andrewintw/tailnetctl
+    Commit:     1526eb0
+
+The vendored file is unmodified. The skill adds a wrapper, documentation, and
+evaluation prompts around it. See README.md for update instructions.
+
+The original work is by the upstream project and is distributed here under the
+MIT License (see LICENSE).

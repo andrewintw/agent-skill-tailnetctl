@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+"""Report tailnetctl setup readiness without revealing secrets.
+
+Output is a JSON object on stdout. Key values are never included; only
+booleans and paths are reported.
+
+Exit codes:
+    0  env file exists and a usable auth key is present
+    1  setup is incomplete (missing env file, missing key, or placeholder)
+    2  invalid arguments
+
+Usage:
+    python3 scripts/check_setup [--env-file PATH]
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import stat
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import tailnetctl as tc  # noqa: E402
+
+DEFAULT_ENV_FILE = Path.home() / ".config" / "tailscale" / "tailnetctl.env"
+
+
+def resolve_env_file(arg: str | None) -> Path:
+    if arg:
+        return Path(arg).expanduser()
+    return Path(os.environ.get("TAILNETCTL_ENV_FILE") or DEFAULT_ENV_FILE).expanduser()
+
+
+def read_env_values(path: Path) -> dict[str, str]:
+    if not path.is_file():
+        return {}
+    try:
+        return tc.parse_env_file(path)
+    except Exception:
+        return {}
+
+
+def get_value(name: str, values: dict[str, str]) -> str | None:
+    shell = os.environ.get(name)
+    if shell is not None and shell.strip():
+        return shell.strip()
+    value = values.get(name)
+    if value is not None and value.strip():
+        return value.strip()
+    return None
+
+
+def file_mode(path: Path) -> tuple[str | None, bool | None]:
+    try:
+        mode = stat.S_IMODE(path.stat().st_mode)
+    except OSError:
+        return None, None
+    return format(mode, "o"), (mode & 0o077) == 0
+
+
+def tailscale_state() -> dict:
+    binary = shutil.which("tailscale")
+    state = {
+        "tailscale_binary": binary,
+        "backend_state": None,
+        "online": None,
+        "status_error": None,
+    }
+    if not binary:
+        return state
+    try:
+        proc = subprocess.run(
+            [binary, "status", "--json"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except Exception as exc:  # noqa: BLE001
+        state["status_error"] = str(exc)[:200]
+        return state
+    if proc.returncode != 0:
+        state["status_error"] = (proc.stderr or proc.stdout or "").strip()[:200]
+        return state
+    try:
+        data = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        state["status_error"] = f"invalid status JSON: {exc}"
+        return state
+    state["backend_state"] = data.get("BackendState")
+    state["online"] = tc.self_is_online(data)
+    return state
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Check tailnetctl setup readiness")
+    parser.add_argument("--env-file", default=None, help="Path to the env file")
+    args = parser.parse_args()
+
+    env_file = resolve_env_file(args.env_file)
+    env_exists = env_file.is_file()
+    env_mode, env_mode_ok = file_mode(env_file) if env_exists else (None, None)
+    values = read_env_values(env_file)
+
+    key_file_value = get_value("TAILSCALE_AUTH_KEY_FILE", values)
+    inline_key = get_value("TAILSCALE_AUTH_KEY", values)
+
+    key_source = None
+    key_present = False
+    key_placeholder = False
+    key_file = None
+    key_file_exists = None
+    key_file_nonempty = None
+
+    if key_file_value:
+        key_source = "file"
+        key_file = str(Path(key_file_value).expanduser())
+        key_path = Path(key_file)
+        key_file_exists = key_path.is_file()
+        key_file_nonempty = bool(key_file_exists and key_path.stat().st_size > 0)
+        key_present = key_file_nonempty
+    elif inline_key:
+        key_source = "inline"
+        key_placeholder = tc.is_placeholder(inline_key)
+        key_present = not key_placeholder
+
+    ready = bool(env_exists and key_present)
+
+    output = {
+        "env_file": str(env_file),
+        "env_exists": env_exists,
+        "env_mode": env_mode,
+        "env_mode_ok": env_mode_ok,
+        "key_source": key_source,
+        "key_present": key_present,
+        "key_placeholder": key_placeholder,
+        "key_file": key_file,
+        "key_file_exists": key_file_exists,
+        "key_file_nonempty": key_file_nonempty,
+        "ready": ready,
+        **tailscale_state(),
+    }
+    print(json.dumps(output, indent=2, ensure_ascii=False))
+    sys.exit(0 if ready else 1)
+
+
+if __name__ == "__main__":
+    main()
