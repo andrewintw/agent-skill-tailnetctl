@@ -14,7 +14,8 @@
 | `警告: ... 權限過寬` | env 檔可被 group/other 讀取 | `chmod 600 ~/.config/tailscale/tailnetctl.env` |
 | SSH 沒有反應或卡住 | 非 TTY 環境執行互動式 ssh | 改用 `scripts/ssh_peer`；非 TTY 會印出指令 |
 | 一直詢問遠端使用者 | 非 TTY 無法回答提示 | 先以 `check_setup` 的 `ssh_user_candidate` 確認帳號，再用 `--remote-user` |
-| 在對話視窗無法完成 SSH | agent 非 TTY，無法交棒互動式 ssh | 把 `ssh -- <user>@<host>` 完整指令給使用者在終端機執行 |
+| 在對話視窗無法完成 SSH | agent 非 TTY，無法交棒互動式 ssh | 把 `ssh -- <user>@<host>` 完整指令給使用者在終端機執行，並要求完成後回覆結果 |
+| 使用者貼完指令後以為 agent 會自動偵測 | 交棒時沒有要求回報完成 | 每次交棒都明確要求「完成後在對話回覆『完成』」，等待回覆再以 `check_setup`／`status` 驗證 |
 | `BatchMode ... Permission denied` | 用 BatchMode 反覆猜帳號 | 不要猜；先確認 username，或請使用者用密碼／金鑰登入 |
 | auth key 留在 shell history | 用 `printf` 直接把 key 寫在命令列 | 改用 `read -rs` 隱藏輸入或編輯器寫入 key 檔 |
 | `REMOTE HOST IDENTIFICATION HAS CHANGED` | 節點重建、host key 變更 | 確認是預期變更後 `ssh-keygen -R <hostname>` 與 `ssh-keygen -R <ip>` |

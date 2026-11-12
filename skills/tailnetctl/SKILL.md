@@ -33,6 +33,17 @@ description: >
 - env 檔與 key 設定方式見 `references/env.md`，缺少時依下一節引導。
 - 需要時 `sudo` 可執行（`join`、啟動 daemon 屬寫入操作）。
 
+## 交棒給使用者執行（handoff）
+
+只要把指令交給使用者「在自己的終端機執行」（key 設定、需要 sudo 的 `join`、
+SSH、web tunnel、任何互動步驟），回覆都必須包含這段（或等義文字）：
+
+> 請在你自己的終端機執行上面指令；完成後請在對話回覆「完成」，我不會自動偵測。
+> 若失敗請貼上錯誤訊息。
+
+送出後**等待使用者明確回覆**再繼續，不要假設指令已完成，也不要自行接著跑下一步。
+收到回覆後，先用 `check_setup`／`status` 等唯讀指令驗證結果，再決定下一步。
+
 ## 首次設定（env 檔不存在或 key 未就緒）
 
 先跑檢查（唯讀、不顯示 key）：
@@ -64,8 +75,9 @@ python3 "$SKILL_DIR/scripts/check_setup"
    `~/.config/tailscale/authkey`（內容只有 key）。
    並確認 env 檔的 `TAILSCALE_AUTH_KEY_FILE=/home/<you>/.config/tailscale/authkey`
    （或直接填 `TAILSCALE_AUTH_KEY=...`）。
-5. 使用者確認完成後，再跑 `check_setup` 確認 `ready: true` 且 `env_mode_ok: true`；
-   需要時再跑 `join --dry-run` 驗證 key 可解析。
+   交棒時依「交棒給使用者執行」明確要求使用者完成後在對話回覆「完成」。
+5. 等待使用者回覆「完成」後（不要假設已完成），再跑 `check_setup` 確認
+   `ready: true` 且 `env_mode_ok: true`；需要時再跑 `join --dry-run` 驗證 key 可解析。
 6. 回到原本請求，執行 `join` 並以 `status` 確認。
 
 若 `check_setup` 顯示 `key_placeholder: true`，代表仍是 `REPLACE_ME`，重複步驟 4。
@@ -129,7 +141,8 @@ python3 "$SKILL_DIR/scripts/tailnetctl" status --json
 - 已 `Running` 但離線：先確認網路，不要自動 `--force`。
 - 要重新認證或切換 tailnet 才用 `join --force`（先取得使用者同意）。
 - 若預覽指令含 `sudo`，且 `sudo -n true` 失敗、目前又沒有 TTY，**不要**直接執行；
-  把指令印給使用者，請他在終端機執行，或先 `sudo -v`。
+  把指令印給使用者，請他在終端機執行，或先 `sudo -v`。交棒時要求使用者完成後
+  在對話回覆「完成」，等待回覆再 `status` 驗證。
 - `join` 成功後會輪詢最多約 60 秒。
 
 ### 3. 列出 tailnet 裝置
@@ -164,7 +177,8 @@ python3 "$SKILL_DIR/scripts/tailnetctl" list --json
    python3 "$SKILL_DIR/scripts/ssh_peer" --peer <host> --remote-user <user> --ssh-arg='-o StrictHostKeyChecking=accept-new'
    ```
 5. 非 TTY（agent 工具呼叫）時，把印出的 `ssh -- <user>@<host>` 貼給使用者，
-   並明確說「請在終端機執行」。**不要**在對話視窗嘗試互動式 ssh，也不要
+   並明確說「請在終端機執行」，同時要求完成後在對話回覆結果（成功或錯誤訊息）；
+   等待回覆再繼續。**不要**在對話視窗嘗試互動式 ssh，也不要
    用 BatchMode 反覆試帳號；必要時只做 `tailscale ping` 確認可達。
 
 遠端使用者優先序：`--remote-user` > `TAILSCALE_REMOTE_SSH_USER` > 目前使用者
@@ -178,7 +192,8 @@ python3 "$SKILL_DIR/scripts/web_peer" --peer <host> --port <remote_port> [--loca
 
 - 預設綁 `127.0.0.1:8080`，連到 peer 的指定 port。
 - 遠端 username 規則與 SSH 相同：先用 `check_setup` 的 `ssh_user_candidate` 確認，
-  需要時加 `--remote-user`；非 TTY 時把完整指令交給使用者在終端機執行。
+  需要時加 `--remote-user`；非 TTY 時把完整指令交給使用者在終端機執行，並要求
+  完成後在對話回覆「完成」或錯誤訊息，等待回覆再繼續。
 - TTY 時前景執行，按 Ctrl-C 結束；非 TTY 時只印出等價的 `ssh -N -L ...` 指令。
 - 非 loopback 的 `--bind` 會讓其他機器連入，執行前提醒使用者。
 
@@ -217,6 +232,8 @@ python3 "$SKILL_DIR/scripts/web_peer" --peer <host> --port <remote_port> [--loca
 - env 檔權限過寬：`chmod 600`。
 - 非 TTY 下卡在 sudo／遠端使用者提示：改用 `--dry-run` 印指令給使用者，
   並先用 `check_setup` 的 `ssh_user_candidate` 確認 username。
+- 使用者以為 agent 會自動偵測指令是否完成：交棒時一律要求使用者完成後在對話
+  回覆「完成」，並等待回覆再驗證。
 - SSH host key 變更：確認是預期變更後，`ssh-keygen -R <host>`。
 
 ---
@@ -232,5 +249,7 @@ python3 "$SKILL_DIR/scripts/web_peer" --peer <host> --port <remote_port> [--loca
   反覆猜帳號。
 - 若缺少 env／key，已用 `check_setup` 與「首次設定」引導完成，且明確請使用者在
   終端機輸入 key、未要求使用者在對話中貼 key。
+- 每次交棒給使用者在自己終端機執行時，都有明確要求完成後在對話回覆「完成」
+  （並說明 agent 不會自動偵測），且已等待回覆再進行驗證。
 - 未讀取或印出 auth key，未修改 vendored `tailnetctl.py`。
 - 未自動 commit 或變更使用者未同意的網路設定。

@@ -26,21 +26,21 @@
       "id": 4,
       "prompt": "幫我 SSH 進去 tailnet 上的 my-host",
       "should_trigger": true,
-      "expected_output": "用 list 確認 peer；以 check_setup 的 ssh_user_candidate（env 或目前使用者）先確認 username；TTY 可交棒 ssh，非 TTY 只印出 ssh 指令並請使用者在終端機執行，不猜帳號。",
+      "expected_output": "用 list 確認 peer；以 check_setup 的 ssh_user_candidate（env 或目前使用者）先確認 username；TTY 可交棒 ssh，非 TTY 只印出 ssh 指令並請使用者在終端機執行，明確要求完成後回覆「完成」或錯誤訊息，等待回覆再驗證，不猜帳號。",
       "files": []
     },
     {
       "id": 5,
       "prompt": "開一個 web tunnel 到 peer 的 80 port",
       "should_trigger": true,
-      "expected_output": "使用 web_peer --peer <peer> --port 80；非 TTY 時印出等價的 ssh -N -L 指令。",
+      "expected_output": "使用 web_peer --peer <peer> --port 80；非 TTY 時印出等價的 ssh -N -L 指令，並要求使用者在終端機執行後回覆「完成」或錯誤訊息。",
       "files": []
     },
     {
       "id": 6,
       "prompt": "我還沒設定 Tailscale 的 auth key，要怎麼開始？",
       "should_trigger": true,
-      "expected_output": "說明需要 auth key 並提供建立網址，明確請使用者在自己的終端機以隱藏輸入建立 0600 key 檔，不要在對話中索取或要求貼上 key。",
+      "expected_output": "說明需要 auth key 並提供建立網址，明確請使用者在自己的終端機以隱藏輸入建立 0600 key 檔，不要在對話中索取或要求貼上 key；並要求完成後在對話回覆「完成」，等待回覆再驗證。",
       "files": []
     },
     {
@@ -61,7 +61,7 @@
       "id": 9,
       "prompt": "連過去 my-host",
       "should_trigger": true,
-      "expected_output": "先確認 peer 在線；用 check_setup 取 ssh_user_candidate，先問使用者要用哪個 username 連線；非 TTY 只提供 ssh -- <user>@<host> 指令並請使用者在終端機執行，不開互動 session、不反覆猜帳號。",
+      "expected_output": "先確認 peer 在線；用 check_setup 取 ssh_user_candidate，先問使用者要用哪個 username 連線；非 TTY 只提供 ssh -- <user>@<host> 指令並請使用者在終端機執行，要求完成後回覆「完成」或錯誤訊息並等待回覆，不開互動 session、不反覆猜帳號。",
       "files": []
     }
   ]

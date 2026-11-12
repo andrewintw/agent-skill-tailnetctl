@@ -25,6 +25,8 @@ install -m 600 "$SKILL_DIR/references/env.example" \
 
 填入 auth key。建議使用「key 檔案」而不是 inline key。**請使用者在自己的終端機
 執行**，不要把 key 貼進對話；用隱藏輸入避免 key 留在 shell history。
+交棒時務必補上：「完成後請在對話回覆『完成』，我不會自動偵測；失敗請貼錯誤訊息。」
+並等待使用者回覆後再跑 `check_setup` 驗證。
 若 key 檔已存在且有效就跳過以下指令：
 
 ```dotenv
