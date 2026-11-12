@@ -1,0 +1,14 @@
+{
+  "name": "agent-skill-tailnetctl",
+  "description": "Agent skills for Tailscale and tailnet operations.",
+  "owner": {
+    "name": "andrewintw"
+  },
+  "plugins": [
+    {
+      "name": "tailnetctl",
+      "source": "./",
+      "description": "Connect to and manage a Tailscale tailnet from your AI agent."
+    }
+  ]
+}

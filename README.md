@@ -19,6 +19,8 @@ peer, or open an SSH port-forward (web tunnel).
 
 ```
 agent-skill-tailnetctl/
+├── .claude-plugin/
+│   └── marketplace.json   # Claude Code plugin marketplace
 ├── LICENSE
 ├── NOTICE
 └── skills/
@@ -46,14 +48,66 @@ agent-skill-tailnetctl/
 
 ## Install
 
-Clone or copy this repository to a stable path, then expose
-`skills/tailnetctl` to your agent's skill directory. For example:
+Install the whole `skills/tailnetctl/` directory, not only `SKILL.md`; the
+skill needs its `scripts/` and `references/` files. Restart the agent after
+installing so it re-scans skills.
+
+### Claude Code plugin marketplace
+
+```text
+/plugin install tailnetctl --marketplace andrewintw/agent-skill-tailnetctl
+```
+
+Or add the marketplace and install in two steps:
+
+```text
+/plugin marketplace add andrewintw/agent-skill-tailnetctl
+/plugin install tailnetctl@agent-skill-tailnetctl
+```
+
+### GitHub CLI (cross-agent)
+
+Requires a GitHub CLI build that includes the `gh skill` preview command.
 
 ```bash
-git clone https://github.com/<you>/agent-skill-tailnetctl \
+# install the named skill for one agent
+gh skill install andrewintw/agent-skill-tailnetctl tailnetctl \
+  --agent opencode --scope user
+
+# or install every skill in the repo (there is one)
+gh skill install andrewintw/agent-skill-tailnetctl --all \
+  --agent opencode --scope user
+```
+
+Use `--agent claude-code`, `--agent codex`, or `--agent gemini-cli` as needed.
+
+### skills CLI (Node.js)
+
+```bash
+npx skills add andrewintw/agent-skill-tailnetctl \
+  --skill tailnetctl -a opencode -g
+```
+
+Use `-a claude-code`, `-a codex`, or `-a gemini-cli`; omit `-g` for project
+scope.
+
+### Gemini CLI
+
+```bash
+gemini skills install \
+  https://github.com/andrewintw/agent-skill-tailnetctl.git \
+  --path skills/tailnetctl --consent
+```
+
+### Manual (always works)
+
+```bash
+git clone https://github.com/andrewintw/agent-skill-tailnetctl \
   ~/repos/agent-skill-tailnetctl
 
-# interop path used by opencode / Codex / Gemini / Antigravity
+mkdir -p ~/.agents/skills ~/.claude/skills
+
+# opencode / Codex / Gemini / Antigravity
 ln -s ~/repos/agent-skill-tailnetctl/skills/tailnetctl \
   ~/.agents/skills/tailnetctl
 
@@ -62,7 +116,21 @@ ln -s ~/repos/agent-skill-tailnetctl/skills/tailnetctl \
   ~/.claude/skills/tailnetctl
 ```
 
-Restart the agent after linking.
+If an agent does not follow symlinks, copy the directory instead:
+
+```bash
+cp -r ~/repos/agent-skill-tailnetctl/skills/tailnetctl \
+  ~/.agents/skills/tailnetctl
+```
+
+Installing the skill does not configure the auth key. After installing, run:
+
+```bash
+python3 ~/.agents/skills/tailnetctl/scripts/check_setup
+```
+
+See [Secrets and first-time setup](#secrets-and-first-time-setup) and
+[`skills/tailnetctl/references/env.md`](skills/tailnetctl/references/env.md).
 
 ## Secrets and first-time setup
 
